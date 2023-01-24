@@ -1,30 +1,26 @@
 MODULE main
-VAR	-- declaration of variables
-  request : boolean;
-  resource : {ready,busy};
+VAR	
+  user1_request : boolean;
+  user2_request : boolean;
+  user1_has_resource: boolean;
+  user2_has_resource: boolean;
 
 ASSIGN
-  init(resource) := ready;
-  next(resource) := case
-                   resource = ready & request : busy;
-                   TRUE : {ready,busy};			
-          	esac;
+--  init(resource) := ready;
+--  next(resource) := case
+--                   resource = ready & request : busy;
+--                  TRUE : {ready,busy};			
+--          	esac;
+  
+  init(user1_has_resource) := FALSE;
+  next(user1_has_resource) := case
+				! user2_has_resource & user1_request: TRUE;
+				TRUE: FALSE;
+			esac;
 
--- if ready & request then state = busy, if not we move to the second line
--- default case bcz of true (everything is possible inside the set {read, busy})
--- resource = ready is an atomic proposition
-
+  init(user2_has_resource) := FALSE;
+  next(user2_has_resource) := case
+				! user1_has_resource & user2_request: TRUE;
+				TRUE: FALSE;
+			esac;
 LTLSPEC
-  G(request -> (X resource = busy))
-  -- expected to be False because if we request and the resource is busy, the request won't be taken
-  -- into consideration
-
-LTLSPEC  
-  G(request -> (resource = busy | X resource = busy))
-
-LTLSPEC
-  G (F request) -- there will be an infinite number of requests
-  -- expected to be false because we don't impose anything about request
-
-LTLSPEC -- there will be a state where we won't have requests no more
-  F(G ! request)
