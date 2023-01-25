@@ -1,9 +1,9 @@
 MODULE main
 VAR	
-  user1_request : boolean;
-  user2_request : boolean;
-  user1_has_resource: boolean;
-  user2_has_resource: boolean;
+user1_request : boolean;
+user2_request : boolean;
+user1_has_resource: boolean;
+user2_has_resource: boolean;
 
 ASSIGN
 --  init(resource) := ready;
@@ -12,15 +12,19 @@ ASSIGN
 --                  TRUE : {ready,busy};			
 --          	esac;
   
-  init(user1_has_resource) := FALSE;
-  next(user1_has_resource) := case
-				! user2_has_resource & user1_request: TRUE;
-				TRUE: FALSE;
-			esac;
+init(user1_has_resource) := FALSE;
+next(user1_has_resource) := 
+    case
+    ! user2_has_resource & user1_request: TRUE;
+		TRUE: FALSE;
+		esac;
 
-  init(user2_has_resource) := FALSE;
-  next(user2_has_resource) := case
-				! user1_has_resource & user2_request: TRUE;
-				TRUE: FALSE;
-			esac;
+init(user2_has_resource) := FALSE;
+next(user2_has_resource) :=
+    case
+    ! user1_has_resource & user2_request: TRUE;
+			TRUE: FALSE;
+		esac;
+
 LTLSPEC
+
