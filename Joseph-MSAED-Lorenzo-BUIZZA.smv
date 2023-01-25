@@ -26,5 +26,5 @@ next(user2_has_resource) :=
 			TRUE: FALSE;
 		esac;
 
-LTLSPEC
+--LTLSPEC
 

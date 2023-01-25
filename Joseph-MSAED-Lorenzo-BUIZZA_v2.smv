@@ -28,7 +28,7 @@ VAR
   -- previous step, otherwise they're FALSE. In order to model their behavior,
   -- we could do something like:
   -- init(user1_had_resource) := FALSE;
-  -- next(user1_had_resource) := case
+  -- next(user1_had_resource) := case     
   --				   user1_has_resource: TRUE;
   --				   TRUE: FALSE;
   --				 esac;
@@ -40,8 +40,7 @@ VAR
   --				 esac;
   --
   -- But this was just an idea which didn't go anywhere, but maybe it could be useful.
-
-
+  
 ASSIGN
 
 --  OLD MODEL OF VERSION v1 of Tuesday 24th Jan done in class.
@@ -64,9 +63,6 @@ ASSIGN
 --			        esac;
 
 
-
-
-
 --  MODEL OF VERSION v2 of Wednesday 25th Jan by Lorenzo.
 --  CARE: we need some sort of control to verify that the users don't have the resource
 --  at the same time! Because it's actually happening, and we don't want that.
@@ -74,51 +70,60 @@ ASSIGN
 --  never request the resource (i.e., user1_request = FALSE and user2_request = FALSE in every step). This
 --  is another problem that we need to fix! To fix it, maybe we have to model also the behavior of these two
 --  variables user1_request and user2_request.
---
+
+-- JM: in the BE document, it says that 'the requests of users can evolve arbitrairily', meaning it can be whatever
+--      and we should manually set it or control it in a way.
+
 --  Anyways, whatever I wrote here below doesn't take into account these two problems that I just
 --  mentioned. So maybe you can think about it and try to solve them.
 
   init(user1_has_resource) := FALSE;
   next(user1_has_resource) := case
-  				   user1_request & (! user1_has_resource): TRUE;
-  				   TRUE: FALSE;
-  			      esac;
+            user1_request & (! user1_has_resource) & (! user2_has_resource) : TRUE;
+  				  TRUE: {TRUE, FALSE};
+            esac;
 
   init(user2_has_resource) := FALSE;
   next(user2_has_resource) := case
-  				   user2_request & (! user2_has_resource): TRUE;
-  				   TRUE: FALSE;
-  			      esac;
+  				  user2_request & (! user2_has_resource) & (! user1_has_resource): TRUE;
+  				  TRUE: {TRUE, FALSE};
+  			    esac;
 
-
-
+  init(user2_request) := {TRUE, FALSE};
+  next(user2_request) := case
+            user1_request : FALSE;
+            TRUE : {TRUE, FALSE};
+            esac;
 
 LTLSPEC -- 1) At any time, if User1 requests the resource, then User1 will get the resource later on
-  F (user1_request & X (F (user1_has_resource)))
-  -- G (user1_request -> X (F (user1_has_resource)))
+  -- F (user1_request & X (F (user1_has_resource)))
+  G (user1_request -> (F(user1_has_resource)))
 
 
 LTLSPEC -- 2) At any time, if User2 requests the resource, then User2 will get the resource later on
-  F (user2_request & X (F (user2_has_resource)))
-  -- G (user2_request -> X (F (user2_has_resource)))
+  -- F (user2_request & X (F (user2_has_resource)))
+  G (user2_request -> (X (F (user2_has_resource))))
+
 
 
 LTLSPEC -- 3) User1 and User2 never get the resource at the same time
+  -- G (!(user1_has_resource & user2_has_resource)) -- the opposite of user1 and user2 have the res at the same time
   G ((! user1_has_resource) | (! user2_has_resource))
 
 
 LTLSPEC -- 4) Neither User1 nor User2 will ever keep the resource forever
-  F (user1_has_resource & X (F (! user1_has_resource))) & F (user2_has_resource & X (F (! user2_has_resource)))
+  -- F (user1_has_resource & X (F (! user1_has_resource))) & F (user2_has_resource & X (F (! user2_has_resource)))
   -- G (user1_has_resouce -> X (F (! user1_has_resource))) & G (user2_has_resouce -> X (F (! user2_has_resource)))
+  F ( !(G (user1_has_resource))) |  F ( !(G (user2_has_resource))) --JM: this specification is verified as TRUE 
 
 
 LTLSPEC -- 5) If User1 requests the resource an infinite number of times, then it gets the resource an infinite number of times
-  G (F (user1_request & X (F (user1_has_resource))))
+--   G (F (user1_request & X (F (user1_has_resource))))
+  F( user1_request & X F user1_has_resource)
 
+-- LTLSPEC -- just a simple control to verify that eventually the user1 will have the resource
+--   F (user1_has_resource)
 
-LTLSPEC -- just a simple control to verify that eventually the user1 will have the resource
-  F (user1_has_resource)
-
-LTLSPEC -- just a simple control to verify that eventually the user2 will have the resource
-  F (user2_has_resource)
+-- LTLSPEC -- just a simple control to verify that eventually the user2 will have the resource
+--   F (user2_has_resource)
   
