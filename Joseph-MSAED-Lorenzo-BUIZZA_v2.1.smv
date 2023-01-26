@@ -7,6 +7,15 @@ VAR
   
 ASSIGN
 
+-- VERSION 2 OF THE MODEL
+-- In the first iteration of the model, one very important property was not satisfied:
+-- " User1 and User2 never get the resource at the same time".
+-- Therefore, we need some sort of modification to prevent that from happening.
+-- To do so, there was a compromise; the idea was to set a priority for every user,
+-- so that if they request at the same time, only one of them get to have the resource 
+-- in the next state. Thus, we choose to give User1 the higher priority.
+
+
   init(user1_has_resource) := FALSE;
   next(user1_has_resource) := case
             user1_request & (! user1_has_resource): TRUE;
@@ -15,9 +24,11 @@ ASSIGN
 
   init(user2_has_resource) := FALSE;
   next(user2_has_resource) := case
-  				  user2_request & (! user2_has_resource): TRUE;
+  				  user2_request & (! user2_has_resource) & (!user1_request) : TRUE;
   				  TRUE: FALSE;
   			    esac;
+-- added another condition '(!user1_request)' before allowing user2 to have to resource.
+
 
 -- 1) At any time, if User1 requests the resource, then User1 will get the resource later on
 LTLSPEC
@@ -28,15 +39,14 @@ LTLSPEC
 -- 2) At any time, if User2 requests the resource, then User2 will get the resource later on
 LTLSPEC 
   G (user2_request -> (F (user2_has_resource)))
--- Similarly to the case of user1, it is satisfied.
+-- In this Version 2 of the model, it is not satisfied, because of the case when there are 2 requests from the 2 users,
+-- and in the case user2 will not get the resource, meaning this property can't be true
 
 
 -- 3) User1 and User2 never get the resource at the same time
 LTLSPEC 
   G ((! user1_has_resource) | (! user2_has_resource))
--- In this version of our model, this specification is not satisfied, since there is nothing preventing User1 and User2
--- to request the resource at the same time, meaning they will both get it in the next state, which is not logical.
--- In the second version, we will make sure that this specification will be satisfied
+-- In Version 2, this property is satisfied. 
 
 
 -- 4) Neither User1 nor User2 will ever keep the resource forever
@@ -53,4 +63,5 @@ LTLSPEC
 -- we test: G F p.
 -- Similarly, we want the property 1 to happen an infinite number of times, which is translated in this property.
 -- It is satisfied in this model.
+
   
