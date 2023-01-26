@@ -4,101 +4,31 @@ VAR
   user2_request : boolean;
   user1_has_resource: boolean;
   user2_has_resource: boolean;
-<<<<<<< HEAD
   
 ASSIGN
+
+-- VERSION 2 OF THE MODEL
+-- In the first iteration of the model, one very important property was not satisfied:
+-- " User1 and User2 never get the resource at the same time".
+-- Therefore, we need some sort of modification to prevent that from happening.
+-- To do so, there was a compromise; the idea was to set a priority for every user,
+-- so that if they request at the same time, only one of them get to have the resource 
+-- in the next state. Thus, we choose to give User1 the higher priority.
+
 
   init(user1_has_resource) := FALSE;
   next(user1_has_resource) := case
             user1_request & (! user1_has_resource): TRUE;
   				  TRUE: FALSE;
-=======
-
-  -- Firstly, it is worth noticing that, in our model, if a user has a resource and he makes, 
-  -- in the same step, another request, it might happend that he endlessly has the resource!
-  -- 
-  -- step1: 
-  --         user1_has_resource: TRUE
-  --         user1_request: TRUE
-  --
-  -- step2:
-  --	     user1_has_resource: TRUE
-  --         user1_request: TRUE
-  -- 
-  -- step "n":
-  --	     it could go on and on and on, always having the resource
-  --
-  -- So we should try to find a way to avoid this, cause it's compromising the verification of the
-  -- safety properties.
-
-  -- Maybe we could add two other variables to improve the assignment of the resources:
-  -- these two variables could be named user1_had_resource and user2_had_resource (booleans).
-  -- These variables are TRUE if the respective user had the resource in the immediately
-  -- previous step, otherwise they're FALSE. In order to model their behavior,
-  -- we could do something like:
-  -- init(user1_had_resource) := FALSE;
-  -- next(user1_had_resource) := case     
-  --				   user1_has_resource: TRUE;
-  --				   TRUE: FALSE;
-  --				 esac;
-  --
-  -- init(user2_had_resource) := FALSE;
-  -- next(user2_had_resource) := case
-  --				   user2_has_resource: TRUE;
-  --				   TRUE: FALSE;
-  --				 esac;
-  --
-  -- But this was just an idea which didn't go anywhere, but maybe it could be useful.
-  
-ASSIGN
-
---  OLD MODEL OF VERSION v1 of Tuesday 24th Jan done in class.
---  I noticed one mistake in these "case-esac" constructs for the two users: it's wrong to include 
---  the condition "! user2_has_resource" for the assignment of the resource to User1, because we
---  have to think about the next step! Not the current one! So it's actually okay if the other 
---  user has the resource in the current step, simply because we are assigning the resource in the future one.
---  
---
---  init(user1_has_resource) := FALSE;
---  next(user1_has_resource) := case
---				  ! user2_has_resource & user1_request: TRUE;		THIS IS WRONG
---				  TRUE: FALSE;
---			        esac;
---
---  init(user2_has_resource) := FALSE;
---  next(user2_has_resource) := case
---				  ! user1_has_resource & user2_request & (! user1_request): TRUE;	 THIS IS WRONG
---				  TRUE: FALSE;
---			        esac;
-
-
---  MODEL OF VERSION v2 of Wednesday 25th Jan by Lorenzo.
---  CARE: we need some sort of control to verify that the users don't have the resource
---  at the same time! Because it's actually happening, and we don't want that.
---  Additionally, in this version (and also in version v1), it might happen that the users
---  never request the resource (i.e., user1_request = FALSE and user2_request = FALSE in every step). This
---  is another problem that we need to fix! To fix it, maybe we have to model also the behavior of these two
---  variables user1_request and user2_request.
-
--- JM: in the BE document, it says that 'the requests of users can evolve arbitrairily', meaning it can be whatever
---      and we should manually set it or control it in a way.
-
---  Anyways, whatever I wrote here below doesn't take into account these two problems that I just
---  mentioned. So maybe you can think about it and try to solve them.
-
-  init(user1_has_resource) := FALSE;
-  next(user1_has_resource) := case
-            user1_request & (! user1_has_resource) & (! user2_has_resource) : TRUE;
-  				  TRUE: {TRUE, FALSE};
->>>>>>> 7e5806fd513dbd6802a1ca9d3a8066d45faff391
             esac;
 
   init(user2_has_resource) := FALSE;
   next(user2_has_resource) := case
-<<<<<<< HEAD
-  				  user2_request & (! user2_has_resource): TRUE;
+  				  user2_request & (! user2_has_resource) & (!user1_request) : TRUE;
   				  TRUE: FALSE;
   			    esac;
+-- added another condition '(!user1_request)' before allowing user2 to have to resource.
+
 
 -- 1) At any time, if User1 requests the resource, then User1 will get the resource later on
 LTLSPEC
@@ -109,44 +39,16 @@ LTLSPEC
 -- 2) At any time, if User2 requests the resource, then User2 will get the resource later on
 LTLSPEC 
   G (user2_request -> (F (user2_has_resource)))
--- Similarly to the case of user1, it is satisfied.
-=======
-  				  user2_request & (! user2_has_resource) & (! user1_has_resource): TRUE;
-  				  TRUE: {TRUE, FALSE};
-  			    esac;
->>>>>>> 7e5806fd513dbd6802a1ca9d3a8066d45faff391
+-- In this Version 2 of the model, it is not satisfied, because of the case when there are 2 requests from the 2 users,
+-- and in the case user2 will not get the resource, meaning this property can't be true
 
-  init(user2_request) := {TRUE, FALSE};
-  next(user2_request) := case
-            user1_request : FALSE;
-            TRUE : {TRUE, FALSE};
-            esac;
 
-<<<<<<< HEAD
 -- 3) User1 and User2 never get the resource at the same time
 LTLSPEC 
-=======
-LTLSPEC -- 1) At any time, if User1 requests the resource, then User1 will get the resource later on
-  -- F (user1_request & X (F (user1_has_resource)))
-  G (user1_request -> (F(user1_has_resource)))
-
-
-LTLSPEC -- 2) At any time, if User2 requests the resource, then User2 will get the resource later on
-  -- F (user2_request & X (F (user2_has_resource)))
-  G (user2_request -> (X (F (user2_has_resource))))
-
-
-
-LTLSPEC -- 3) User1 and User2 never get the resource at the same time
-  -- G (!(user1_has_resource & user2_has_resource)) -- the opposite of user1 and user2 have the res at the same time
->>>>>>> 7e5806fd513dbd6802a1ca9d3a8066d45faff391
   G ((! user1_has_resource) | (! user2_has_resource))
--- In this version of our model, this specification is not satisfied, since there is nothing preventing User1 and User2
--- to request the resource at the same time, meaning they will both get it in the next state, which is not logical.
--- In the second version, we will make sure that this specification will be satisfied
+-- In Version 2, this property is satisfied. 
 
 
-<<<<<<< HEAD
 -- 4) Neither User1 nor User2 will ever keep the resource forever
 LTLSPEC 
   G (user1_has_resource -> X (F (! user1_has_resource))) & G (user2_has_resource -> X (F (! user2_has_resource)))
@@ -161,21 +63,5 @@ LTLSPEC
 -- we test: G F p.
 -- Similarly, we want the property 1 to happen an infinite number of times, which is translated in this property.
 -- It is satisfied in this model.
-=======
-LTLSPEC -- 4) Neither User1 nor User2 will ever keep the resource forever
-  -- F (user1_has_resource & X (F (! user1_has_resource))) & F (user2_has_resource & X (F (! user2_has_resource)))
-  -- G (user1_has_resouce -> X (F (! user1_has_resource))) & G (user2_has_resouce -> X (F (! user2_has_resource)))
-  F ( !(G (user1_has_resource))) |  F ( !(G (user2_has_resource))) --JM: this specification is verified as TRUE 
 
-
-LTLSPEC -- 5) If User1 requests the resource an infinite number of times, then it gets the resource an infinite number of times
---   G (F (user1_request & X (F (user1_has_resource))))
-  F( user1_request & X F user1_has_resource)
-
--- LTLSPEC -- just a simple control to verify that eventually the user1 will have the resource
---   F (user1_has_resource)
-
--- LTLSPEC -- just a simple control to verify that eventually the user2 will have the resource
---   F (user2_has_resource)
->>>>>>> 7e5806fd513dbd6802a1ca9d3a8066d45faff391
   
